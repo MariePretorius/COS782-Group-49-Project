@@ -1,0 +1,45 @@
+# macOS and editor files
+.DS_Store
+*.swp
+*.swo
+.vscode/
+.idea/
+
+# Python caches and local environments
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+env/
+
+# Local environment/config files
+.env
+.env.*
+
+# Large raw data archives and generated datasets
+Code/data/*.zip
+Code/data/*.gz
+Code/data/machine_generated/
+Code/data/machine-generated/
+Code/data/generated/
+Code/data/processed/
+
+# Experiment outputs, trained models, and caches
+Code/outputs/
+outputs/
+*.joblib
+*.pkl
+*.pt
+*.bin
+*.safetensors
+
+# Azurite/local emulator files
+__azurite_db_*.json
+__queuestorage__/
+
+# Generated PDFs/archives that can be recreated or are too large for source control
+*.zip
