@@ -1,4 +1,4 @@
-"""Enhanced AfroXLMR experiment with validation selection and threshold tuning."""
+"""Enhanced AfriBERTa experiment with validation selection and threshold tuning."""
 
 from __future__ import annotations
 
@@ -28,22 +28,22 @@ from utils import (
 TRAIN_PATH = Path("data/processed/enhanced/train.csv")
 VALIDATION_PATH = Path("data/processed/enhanced/validation.csv")
 TEST_PATH = Path("data/processed/enhanced/test.csv")
-OUTPUT_DIR = Path("outputs/enhanced/afroxlmr")
-PRIOR_CALIBRATED_OUTPUT_DIR = Path("outputs/enhanced/afroxlmr_prior_calibrated")
-PAIRWISE_OUTPUT_DIR = Path("outputs/enhanced/afroxlmr_pairwise_exploratory")
+OUTPUT_DIR = Path("outputs/enhanced/afriberta")
+PRIOR_CALIBRATED_OUTPUT_DIR = Path("outputs/enhanced/afriberta_prior_calibrated")
+PAIRWISE_OUTPUT_DIR = Path("outputs/enhanced/afriberta_pairwise_exploratory")
 COMPARISON_OUTPUT_DIR = Path("outputs/comparison")
 
-MODEL_NAME = "Davlan/afro-xlmr-base-76L_script"
-MAX_LENGTH = int(os.environ.get("COS760_MAX_LENGTH", "128"))
-TRAIN_BATCH_SIZE = int(os.environ.get("COS760_TRAIN_BATCH_SIZE", "8"))
-EVAL_BATCH_SIZE = int(os.environ.get("COS760_EVAL_BATCH_SIZE", "8"))
-NUM_TRAIN_EPOCHS = float(os.environ.get("COS760_NUM_TRAIN_EPOCHS", "2"))
+MODEL_NAME = os.environ.get("COS760_AFRIBERTA_MODEL", "castorini/afriberta_base")
+MAX_LENGTH = int(os.environ.get("COS760_AFRIBERTA_MAX_LENGTH", "128"))
+TRAIN_BATCH_SIZE = int(os.environ.get("COS760_AFRIBERTA_TRAIN_BATCH_SIZE", "8"))
+EVAL_BATCH_SIZE = int(os.environ.get("COS760_AFRIBERTA_EVAL_BATCH_SIZE", "8"))
+NUM_TRAIN_EPOCHS = float(os.environ.get("COS760_AFRIBERTA_NUM_TRAIN_EPOCHS", "2"))
 WEIGHT_DECAY = 0.01
 WARMUP_RATIO = 0.1
-EARLY_STOPPING_PATIENCE = int(os.environ.get("COS760_EARLY_STOPPING_PATIENCE", "1"))
+EARLY_STOPPING_PATIENCE = int(os.environ.get("COS760_AFRIBERTA_EARLY_STOPPING_PATIENCE", "1"))
 LEARNING_RATES = [
     float(value)
-    for value in os.environ.get("COS760_LEARNING_RATES", "3e-5").split(",")
+    for value in os.environ.get("COS760_AFRIBERTA_LEARNING_RATES", "3e-5").split(",")
     if value.strip()
 ]
 THRESHOLDS = [0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80]
@@ -310,7 +310,7 @@ def pairwise_exploratory_predictions(
 
     This is exploratory and assumes the evaluation file contains paired human
     and machine rows. It is useful diagnostically when absolute thresholds drift.
-    The direction can be selected with COS760_PAIRWISE_DIRECTION=lower|higher.
+    The direction can be selected with COS760_AFRIBERTA_PAIRWISE_DIRECTION=lower|higher.
     """
     if direction not in {"lower", "higher"}:
         raise ValueError("Pairwise direction must be 'lower' or 'higher'.")
@@ -344,7 +344,7 @@ def update_comparison_outputs(
     per_language_metrics: pd.DataFrame,
     selected_by: str,
 ) -> None:
-    """Add/replace an AfroXLMR row in enhanced comparison outputs."""
+    """Add/replace an AfriBERTa row in enhanced comparison outputs."""
     COMPARISON_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     comparison_path = COMPARISON_OUTPUT_DIR / "enhanced_model_comparison.csv"
     per_language_path = COMPARISON_OUTPUT_DIR / "enhanced_per_language_metrics.csv"
@@ -390,7 +390,7 @@ def update_comparison_outputs(
 
 
 def main() -> int:
-    """Run enhanced AfroXLMR with LR sweep and validation threshold tuning."""
+    """Run enhanced AfriBERTa with LR sweep and validation threshold tuning."""
     try:
         import torch
         from transformers import AutoTokenizer
@@ -399,6 +399,7 @@ def main() -> int:
         OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
         device_hint = "cuda" if torch.cuda.is_available() else "cpu"
+        print(f"Using model: {MODEL_NAME}")
         print(f"Using device available to Trainer: {device_hint}")
         print(f"Train rows: {len(train_df)}")
         print(f"Validation rows: {len(validation_df)}")
@@ -414,7 +415,7 @@ def main() -> int:
         best_macro_f1 = -1.0
 
         for learning_rate in LEARNING_RATES:
-            print(f"\nTraining AfroXLMR with learning_rate={learning_rate}")
+            print(f"\nTraining AfriBERTa with learning_rate={learning_rate}")
             trainer, validation_probabilities = train_one_learning_rate(
                 learning_rate,
                 train_df,
@@ -505,14 +506,14 @@ def main() -> int:
         metrics, per_language_metrics = evaluate_predictions(
             predictions,
             OUTPUT_DIR,
-            "afroxlmr",
+            "afriberta",
             include_probabilities=True,
         )
         best_trainer.save_model(str(OUTPUT_DIR / "model"))
         tokenizer.save_pretrained(str(OUTPUT_DIR / "model"))
         run_error_analysis(OUTPUT_DIR / "predictions.csv")
         update_comparison_outputs(
-            "afroxlmr",
+            "afriberta",
             OUTPUT_DIR,
             metrics,
             per_language_metrics,
@@ -529,7 +530,7 @@ def main() -> int:
         calibrated_metrics, calibrated_per_language_metrics = evaluate_predictions(
             calibrated_predictions,
             PRIOR_CALIBRATED_OUTPUT_DIR,
-            "afroxlmr_prior_calibrated",
+            "afriberta_prior_calibrated",
             include_probabilities=True,
         )
         save_json(
@@ -558,14 +559,14 @@ def main() -> int:
         )
         run_error_analysis(PRIOR_CALIBRATED_OUTPUT_DIR / "predictions.csv")
         update_comparison_outputs(
-            "afroxlmr_prior_calibrated",
+            "afriberta_prior_calibrated",
             PRIOR_CALIBRATED_OUTPUT_DIR,
             calibrated_metrics,
             calibrated_per_language_metrics,
             "validation_learning_rate_plus_unlabeled_prior_calibration",
         )
 
-        pairwise_direction = os.environ.get("COS760_PAIRWISE_DIRECTION", "lower")
+        pairwise_direction = os.environ.get("COS760_AFRIBERTA_PAIRWISE_DIRECTION", "lower")
         pairwise_predictions = pairwise_exploratory_predictions(
             predictions,
             direction=pairwise_direction,
@@ -574,7 +575,7 @@ def main() -> int:
         pairwise_metrics, pairwise_per_language_metrics = evaluate_predictions(
             pairwise_predictions,
             PAIRWISE_OUTPUT_DIR,
-            "afroxlmr_pairwise_exploratory",
+            "afriberta_pairwise_exploratory",
             include_probabilities=True,
         )
         save_json(
@@ -598,7 +599,7 @@ def main() -> int:
         threshold_results.to_csv(PAIRWISE_OUTPUT_DIR / "threshold_tuning.csv", index=False)
         run_error_analysis(PAIRWISE_OUTPUT_DIR / "predictions.csv")
         update_comparison_outputs(
-            "afroxlmr_pairwise_exploratory",
+            "afriberta_pairwise_exploratory",
             PAIRWISE_OUTPUT_DIR,
             pairwise_metrics,
             pairwise_per_language_metrics,

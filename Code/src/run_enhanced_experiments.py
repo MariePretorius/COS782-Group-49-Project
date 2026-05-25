@@ -92,6 +92,7 @@ def make_classifier(classifier_type: str, c_value: float):
 
 def build_pipeline(family: str, classifier_type: str, params: dict[str, object]) -> Pipeline:
     """Build one candidate pipeline from a model family and parameter dict."""
+    params = {key: value for key, value in params.items() if key != "decision_threshold"}
     classifier = make_classifier(classifier_type, float(params["classifier_C"]))
 
     if family == "word":
@@ -210,13 +211,68 @@ def make_predictions(dataframe: pd.DataFrame, predicted_labels) -> pd.DataFrame:
     return predictions[PREDICTION_COLUMNS]
 
 
+def model_scores(pipeline: Pipeline, texts: pd.Series) -> pd.Series:
+    """Return continuous machine-class scores for threshold tuning."""
+    scores = pipeline.decision_function(texts.astype(str))
+    return pd.Series(scores)
+
+
+def candidate_thresholds(scores: pd.Series) -> list[float]:
+    """Create validation-only thresholds from score percentiles plus default zero."""
+    percentiles = [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95]
+    thresholds = {float(scores.quantile(percentile / 100)) for percentile in percentiles}
+    thresholds.add(0.0)
+    return sorted(thresholds)
+
+
+def tune_threshold(scores: pd.Series, labels: pd.Series) -> dict[str, object]:
+    """Select the decision threshold with best validation macro F1."""
+    best = None
+    y_true = labels.astype(int).to_numpy()
+
+    for threshold in candidate_thresholds(scores):
+        predicted_labels = (scores >= threshold).astype(int).to_numpy()
+        metrics = compute_metrics(y_true, predicted_labels)
+        row = {"decision_threshold": threshold, **metrics}
+        if best is None or row["macro_f1"] > best["macro_f1"]:
+            best = row
+
+    assert best is not None
+    return best
+
+
+def prior_calibrated_predictions(
+    pipeline: Pipeline,
+    calibration_df: pd.DataFrame,
+    evaluation_df: pd.DataFrame,
+) -> tuple[pd.Series, dict[str, float]]:
+    """Predict with per-language thresholds matching train+validation class priors.
+
+    This is an off-book calibration strategy: it uses the unlabeled score
+    distribution of the evaluation batch, but not evaluation labels.
+    """
+    evaluation_scores = model_scores(pipeline, evaluation_df["text"])
+    predicted = pd.Series(0, index=evaluation_df.index, dtype=int)
+    thresholds = {}
+
+    for language, language_df in evaluation_df.groupby("language"):
+        calibration_language_df = calibration_df.loc[calibration_df["language"] == language]
+        positive_prior = float(calibration_language_df["label"].astype(int).mean())
+        language_scores = evaluation_scores.loc[language_df.index]
+        threshold = float(language_scores.quantile(1 - positive_prior))
+        thresholds[language] = threshold
+        predicted.loc[language_df.index] = (language_scores >= threshold).astype(int)
+
+    return predicted, thresholds
+
+
 def run_validation_search(
     model_name: str,
     family: str,
     classifier_type: str,
     train_df: pd.DataFrame,
     validation_df: pd.DataFrame,
-) -> tuple[dict[str, object], pd.DataFrame]:
+) -> tuple[list[dict[str, object]], list[pd.DataFrame]]:
     """Train candidates on train and select the best by validation macro_f1."""
     rows = []
     best_row = None
@@ -225,19 +281,28 @@ def run_validation_search(
     for index, params in enumerate(candidate_params(family), start=1):
         pipeline = build_pipeline(family, classifier_type, params)
         pipeline.fit(train_df["text"].astype(str), train_df["label"].astype(int))
-        validation_pred = pipeline.predict(validation_df["text"].astype(str))
-        metrics = compute_metrics(validation_df["label"].astype(int), validation_pred)
+        validation_scores = model_scores(pipeline, validation_df["text"])
+        threshold_result = tune_threshold(validation_scores, validation_df["label"])
+        metrics = {
+            key: value
+            for key, value in threshold_result.items()
+            if key != "decision_threshold"
+        }
 
         row = {
             "candidate": index,
             **params,
+            "decision_threshold": threshold_result["decision_threshold"],
             **{f"validation_{key}": value for key, value in metrics.items()},
         }
         rows.append(row)
 
         if best_row is None or metrics["macro_f1"] > best_row["validation_macro_f1"]:
             best_row = row
-            best_params = params
+            best_params = {
+                **params,
+                "decision_threshold": threshold_result["decision_threshold"],
+            }
 
     assert best_row is not None and best_params is not None
     validation_results = pd.DataFrame(rows)
@@ -278,21 +343,55 @@ def run_model_family(
         train_validation_df["label"].astype(int),
     )
 
-    test_pred = final_pipeline.predict(test_df["text"].astype(str))
+    test_scores = model_scores(final_pipeline, test_df["text"])
+    test_pred = (test_scores >= float(best_params["decision_threshold"])).astype(int)
     predictions = make_predictions(test_df, test_pred)
     metrics, per_language_metrics = evaluate_predictions(predictions, output_dir, model_name)
     joblib.dump(final_pipeline, output_dir / "model.joblib")
 
     print(pd.Series(metrics).to_string())
-    return (
+    comparison_rows = [
         {
             "model": model_name,
             **metrics,
             "selected_by": "validation_macro_f1",
             "best_params_path": str(output_dir / "best_params.json"),
-        },
-        per_language_metrics.assign(model=model_name),
+        }
+    ]
+    per_language_frames = [per_language_metrics.assign(model=model_name)]
+
+    calibrated_model_name = f"{model_name}_prior_calibrated"
+    calibrated_output_dir = OUTPUT_ROOT / calibrated_model_name
+    calibrated_output_dir.mkdir(parents=True, exist_ok=True)
+    calibrated_pred, thresholds = prior_calibrated_predictions(
+        final_pipeline,
+        train_validation_df,
+        test_df,
     )
+    calibrated_predictions = make_predictions(test_df, calibrated_pred)
+    calibrated_metrics, calibrated_per_language = evaluate_predictions(
+        calibrated_predictions,
+        calibrated_output_dir,
+        calibrated_model_name,
+    )
+    calibrated_params = {**best_params, "prior_calibrated_thresholds": thresholds}
+    save_json(calibrated_output_dir / "best_params.json", calibrated_params)
+    validation_results.to_csv(calibrated_output_dir / "validation_results.csv", index=False)
+    joblib.dump(final_pipeline, calibrated_output_dir / "model.joblib")
+
+    print(f"\nPrior-calibrated variant: {calibrated_model_name}")
+    print(pd.Series(calibrated_metrics).to_string())
+    comparison_rows.append(
+        {
+            "model": calibrated_model_name,
+            **calibrated_metrics,
+            "selected_by": "validation_macro_f1_plus_unlabeled_prior_calibration",
+            "best_params_path": str(calibrated_output_dir / "best_params.json"),
+        }
+    )
+    per_language_frames.append(calibrated_per_language.assign(model=calibrated_model_name))
+
+    return comparison_rows, per_language_frames
 
 
 def write_comparison_outputs(
@@ -508,7 +607,7 @@ def main() -> int:
         comparison_rows = []
         per_language_frames = []
         for model_name, family, classifier_type in model_specs:
-            metrics_row, per_language_metrics = run_model_family(
+            metrics_rows, model_per_language_frames = run_model_family(
                 model_name,
                 family,
                 classifier_type,
@@ -516,8 +615,8 @@ def main() -> int:
                 validation_df,
                 test_df,
             )
-            comparison_rows.append(metrics_row)
-            per_language_frames.append(per_language_metrics)
+            comparison_rows.extend(metrics_rows)
+            per_language_frames.extend(model_per_language_frames)
 
         write_comparison_outputs(comparison_rows, per_language_frames)
         enhanced_comparison = pd.DataFrame(comparison_rows)
