@@ -1,0 +1,8 @@
+{
+  "accuracy": 0.5037974683544304,
+  "macro_f1": 0.3395099645099645,
+  "model": "afroxlmr_min15words",
+  "precision": 1.0,
+  "recall": 0.005076142131979695,
+  "weighted_f1": 0.34034391122998725
+}
