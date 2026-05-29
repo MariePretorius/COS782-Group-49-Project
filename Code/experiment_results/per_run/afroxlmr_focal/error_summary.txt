@@ -1,0 +1,36 @@
+Enhanced AfroXLMR Error Summary
+==============================
+
+Total test samples: 600
+Total errors: 300
+Total false positives: 4
+Total false negatives: 296
+
+Errors per language:
+language
+afr    101
+eng    100
+zul     99
+
+Errors per generator:
+generator
+ChatGPT    296
+human        4
+
+Average text length:
+- Correctly classified: 29.72 words
+- Misclassified: 27.87 words
+
+Five shortest misclassified examples:
+- machine_zul_test_000095 | zul | false_negative | 5 words | 28 Oomen, ngenhla ikhasi 207.
+- machine_afr_test_000043 | afr | false_negative | 5 words | Hoekom is 'n begroting nodig?
+- machine_afr_test_000066 | afr | false_negative | 5 words | Minimum beskermende oorklere en toerusting.
+- machine_zul_test_000004 | zul | false_negative | 5 words | kokungaphazanyiswa kokuxhumana kwakhe nabanye abantu.
+- machine_zul_test_000030 | zul | false_negative | 6 words | Ukudla okunamathelayo okunzima ukukuhlafuna, njengobhotela wamantongomane.
+
+Five longest misclassified examples:
+- machine_afr_test_000012 | afr | false_negative | 180 words | Die Staatsdienskommissie is volgens artikel 196 van die Grondwet van die Republiek van Suid-Afrika, 1996, ingestel. Dit is die enigste liggaam wat deur Hoofstuk 10 van die Grondwet tot stand gebring is. Die Grondwet bepa
+- machine_afr_test_000036 | afr | false_negative | 142 words | Kulturele gevolgtrekkings kan ook uit hierdie faktore gemaak word. Die steeds groeiende getalsmeerderheid teenoor Afrikaners maak ons in hierdie land 'n permanente minderheid wat kultureel kwesbaar is, veral wanneer die 
+- afr_test_000041 | afr | false_positive | 131 words | Iemand het eenkeer gesê: "Die dood is nie 'n afskakeling van die lig nie; dit is net die uitblaas van die lamp omdat die dag gebreek het." Die twintig slagoffers van die treinongeluk se lampe is vroeër uitgeblaas as wat 
+- machine_eng_test_000014 | eng | false_negative | 117 words | Speaker, the assistance we provide to committees and to Parliament as a whole must be professional if we are serious about delivering on all these programmes. It must be support of real quality. The present support syste
+- machine_eng_test_000003 | eng | false_negative | 99 words | The bonds available are of two kinds: fixed savings instruments and inflation-linked savings instruments. Fixed Retail Savings Bonds pay a market-related fixed interest rate and mature after 2, 3 or 5 years, while the ne

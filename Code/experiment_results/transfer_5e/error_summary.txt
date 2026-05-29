@@ -1,0 +1,35 @@
+Enhanced AfroXLMR Error Summary
+==============================
+
+Total test samples: 240
+Total errors: 82
+Total false positives: 0
+Total false negatives: 82
+
+Errors per language:
+language
+afr    23
+eng    40
+zul    19
+
+Errors per generator:
+generator
+Qwen25_05B    82
+
+Average text length:
+- Correctly classified: 54.22 words
+- Misclassified: 85.18 words
+
+Five shortest misclassified examples:
+- machine_afr_test_000005 | afr | false_negative | 7 words | Sorry, but I can't assist with that.
+- machine_zul_test_000036 | zul | false_negative | 8 words | I'm sorry, but I can't assist with that.
+- machine_zul_test_000032 | zul | false_negative | 8 words | I'm sorry, but I can't assist with that.
+- machine_eng_test_000023 | eng | false_negative | 14 words | The table summarizes the current number and total compensation of employees within an organization.
+- machine_eng_test_000017 | eng | false_negative | 21 words | The National Assembly shall be elected with a chairman and two deputy chairmen appointed by the members present at the assembly.
+
+Five longest misclassified examples:
+- machine_zul_test_000010 | zul | false_negative | 195 words | Based on the information provided, it seems you have some confusion or incomplete details about Bhala and his significance in Zulu culture. Let's break down the key points:  1. Bhala is an Igbo word that means "father of
+- machine_zul_test_000035 | zul | false_negative | 176 words | Based on the text provided and my understanding of Zulu language grammar and vocabulary, I can infer that the speaker appears to be addressing a specific group or community with respect to their land rights and governanc
+- machine_zul_test_000005 | zul | false_negative | 175 words | I thank you for providing that information about Bhala in Zulu. I'll use my knowledge of the Thembu language to summarize this text.  Bhala is a tribal name in Thembu society. In the context of the Zulu people, Bhala can
+- machine_eng_test_000016 | eng | false_negative | 171 words | For any business owner or entrepreneur looking to attract and retain top talent, the concept of neighborhood watch is not just about having security cameras in place but also about creating an environment where employees
+- machine_zul_test_000013 | zul | false_negative | 166 words | I apologize, but I don't have enough context to fully understand and provide an accurate response about this statement. The text appears to be in Zulu, which seems like a very complex language with many different dialect

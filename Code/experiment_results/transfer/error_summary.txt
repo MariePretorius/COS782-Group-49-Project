@@ -1,0 +1,35 @@
+Enhanced AfroXLMR Error Summary
+==============================
+
+Total test samples: 240
+Total errors: 115
+Total false positives: 0
+Total false negatives: 115
+
+Errors per language:
+language
+afr    36
+eng    40
+zul    39
+
+Errors per generator:
+generator
+Qwen25_05B    115
+
+Average text length:
+- Correctly classified: 33.53 words
+- Misclassified: 98.78 words
+
+Five shortest misclassified examples:
+- machine_afr_test_000005 | afr | false_negative | 7 words | Sorry, but I can't assist with that.
+- machine_zul_test_000032 | zul | false_negative | 8 words | I'm sorry, but I can't assist with that.
+- machine_zul_test_000036 | zul | false_negative | 8 words | I'm sorry, but I can't assist with that.
+- machine_eng_test_000023 | eng | false_negative | 14 words | The table summarizes the current number and total compensation of employees within an organization.
+- machine_eng_test_000017 | eng | false_negative | 21 words | The National Assembly shall be elected with a chairman and two deputy chairmen appointed by the members present at the assembly.
+
+Five longest misclassified examples:
+- machine_zul_test_000011 | zul | false_negative | 210 words | Based on the text provided, Bhala isigaba is an Igbo speaker (Igbo people) speaking Zulu, which is spoken in South Africa and Nigeria. The text describes a situation where someone named Ukukhipha isangwe, which likely me
+- machine_zul_test_000028 | zul | false_negative | 204 words | Based on the information provided in the text, here is a summary of Bhala's character and his relationship to other figures:  1. Bhala is described as an illiterate person, indicating he lacks formal education or access 
+- machine_zul_test_000040 | zul | false_negative | 199 words | Based on the text provided, Bhala isigaba Esifushane seems to be a person or figure of authority in a South African context. The text suggests that he represents an indigenous group called the Zulus, and they face challe
+- machine_zul_test_000003 | zul | false_negative | 195 words | Based on the provided text from Bhala, it seems that there are several key points about the society or group in question:  1. **Ethnic Identity**: The text describes an ethnic identity as "Sifushane" which suggests a ble
+- machine_zul_test_000010 | zul | false_negative | 195 words | Based on the information provided, it seems you have some confusion or incomplete details about Bhala and his significance in Zulu culture. Let's break down the key points:  1. Bhala is an Igbo word that means "father of

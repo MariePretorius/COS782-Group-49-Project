@@ -1,0 +1,8 @@
+{
+  "accuracy": 0.5,
+  "macro_f1": 0.34482557800943453,
+  "model": "afroxlmr_focal",
+  "precision": 0.5,
+  "recall": 0.013333333333333334,
+  "weighted_f1": 0.34482557800943453
+}

@@ -1,0 +1,13 @@
+{
+  "learning_rate": 2e-05,
+  "loss": "weighted_ce",
+  "max_length": 128,
+  "max_words": 0,
+  "min_words": 0,
+  "model_name": "castorini/afriberta_large",
+  "num_train_epochs": 3.0,
+  "tag": "afriberta",
+  "threshold": 0.28984804004430775,
+  "train_batch_size": 16,
+  "validation_macro_f1_for_threshold": 0.8563074352548037
+}

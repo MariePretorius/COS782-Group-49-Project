@@ -1,0 +1,29 @@
+# Generated training artefacts (large model checkpoints, intermediate logs)
+outputs/
+tmp_trainer/
+logs/
+
+# Raw and processed datasets (rebuildable via src/build_*.py)
+data/
+
+# Python build/cache
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Scratch / debugging
+test_import.py
+test_iso.py
+test_iso2.py
+test_step.py
+test_step2.py
+test_step3.py
+test_tok.py
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
